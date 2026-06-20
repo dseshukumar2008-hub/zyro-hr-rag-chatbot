@@ -8,8 +8,8 @@ from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 
 st.set_page_config(
-page_title="Zyro Dynamics HR Help Desk",
-page_icon="🏢"
+    page_title="Zyro Dynamics HR Help Desk",
+    page_icon="🏢"
 )
 
 st.title("🏢 Zyro Dynamics HR Help Desk")
@@ -17,73 +17,69 @@ st.title("🏢 Zyro Dynamics HR Help Desk")
 @st.cache_resource
 def load_rag():
 
-```
-docs = []
+    docs = []
 
-pdf_folder = "pdfs"
+    pdf_folder = "pdfs"
 
-for file in os.listdir(pdf_folder):
-    if file.endswith(".pdf"):
-        loader = PyPDFLoader(
-            os.path.join(pdf_folder, file)
-        )
-        docs.extend(loader.load())
+    for file in os.listdir(pdf_folder):
+        if file.endswith(".pdf"):
+            loader = PyPDFLoader(
+                os.path.join(pdf_folder, file)
+            )
+            docs.extend(loader.load())
 
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200
-)
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200
+    )
 
-chunks = splitter.split_documents(docs)
+    chunks = splitter.split_documents(docs)
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
 
-vectorstore = FAISS.from_documents(
-    chunks,
-    embeddings
-)
+    vectorstore = FAISS.from_documents(
+        chunks,
+        embeddings
+    )
 
-retriever = vectorstore.as_retriever(
-    search_kwargs={"k":4}
-)
+    retriever = vectorstore.as_retriever(
+        search_kwargs={"k":4}
+    )
 
-llm = ChatGroq(
-    api_key=st.secrets["GROQ_API_KEY"],
-    model="llama-3.3-70b-versatile",
-    temperature=0
-)
+    llm = ChatGroq(
+        api_key=st.secrets["GROQ_API_KEY"],
+        model="llama-3.3-70b-versatile",
+        temperature=0
+    )
 
-return retriever, llm
-```
+    return retriever, llm
+
 
 retriever, llm = load_rag()
 
 question = st.chat_input(
-"Ask an HR question..."
+    "Ask an HR question..."
 )
 
 if question:
 
-```
-st.chat_message("user").write(question)
+    st.chat_message("user").write(question)
 
-docs = retriever.invoke(question)
+    docs = retriever.invoke(question)
 
-context = "\n\n".join(
-    [d.page_content for d in docs]
-)
+    context = "\n\n".join(
+        [doc.page_content for doc in docs]
+    )
 
-prompt = f"""
-```
+    prompt = f"""
+You are the Zyro Dynamics HR Assistant.
 
-You are an HR assistant.
+Answer ONLY from the provided context.
 
-Answer ONLY from the context below.
-
-If the answer is not present,
-say:
+If the answer is not available in the context,
+respond exactly with:
 
 I can only answer HR-related questions based on Zyro Dynamics policy documents.
 
@@ -94,19 +90,19 @@ Question:
 {question}
 """
 
-```
-response = llm.invoke(prompt)
+    response = llm.invoke(prompt)
 
-st.chat_message("assistant").write(
-    response.content
-)
+    st.chat_message("assistant").write(
+        response.content
+    )
 
-with st.expander("Sources"):
-    for doc in docs:
-        st.write(
-            doc.metadata.get(
+    with st.expander("Sources"):
+
+        for doc in docs:
+
+            source = doc.metadata.get(
                 "source",
                 "Unknown"
             )
-        )
-```
+
+            st.write(source)
